@@ -15,7 +15,7 @@ namespace PHPMentors\WorkflowerBundle\DependencyInjection;
 use PHPMentors\Workflower\Definition\Bpmn2File;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\DefinitionDecorator;
+use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\Finder\Finder;
@@ -56,7 +56,7 @@ class PHPMentorsWorkflowerExtension extends Extension
 
         foreach ($config['workflow_contexts'] as $workflowContextId => $workflowContext) {
             $workflowContextIdHash = sha1($workflowContextId);
-            $bpmn2WorkflowRepositoryDefinition = new DefinitionDecorator('phpmentors_workflower.bpmn2_workflow_repository');
+            $bpmn2WorkflowRepositoryDefinition = new ChildDefinition('phpmentors_workflower.bpmn2_workflow_repository');
             $bpmn2WorkflowRepositoryServiceId = 'phpmentors_workflower.bpmn2_workflow_repository.'.$workflowContextIdHash;
             $container->setDefinition($bpmn2WorkflowRepositoryServiceId, $bpmn2WorkflowRepositoryDefinition);
 
@@ -68,19 +68,19 @@ class PHPMentorsWorkflowerExtension extends Extension
                 ;
             foreach ($definitionFiles as $definitionFile) {
                 $workflowId = Bpmn2File::getWorkflowId($definitionFile->getFilename());
-                $bpmn2FileDefinition = new DefinitionDecorator('phpmentors_workflower.bpmn2_file');
+                $bpmn2FileDefinition = new ChildDefinition('phpmentors_workflower.bpmn2_file');
                 $bpmn2FileDefinition->setArguments(array($definitionFile->getPathname()));
                 $bpmn2FileServiceId = 'phpmentors_workflower.bpmn2_file.'.sha1($workflowContextId.$workflowId);
                 $container->setDefinition($bpmn2FileServiceId, $bpmn2FileDefinition);
 
                 $bpmn2WorkflowRepositoryDefinition->addMethodCall('add', array(new Reference($bpmn2FileServiceId)));
 
-                $workflowContextDefinition = new DefinitionDecorator('phpmentors_workflower.workflow_context');
+                $workflowContextDefinition = new ChildDefinition('phpmentors_workflower.workflow_context');
                 $workflowContextDefinition->setArguments(array($workflowContextId, $workflowId));
                 $workflowContextServiceId = 'phpmentors_workflower.workflow_context.'.sha1($workflowContextId.$workflowId);
                 $container->setDefinition($workflowContextServiceId, $workflowContextDefinition);
 
-                $processDefinition = new DefinitionDecorator('phpmentors_workflower.process');
+                $processDefinition = new ChildDefinition('phpmentors_workflower.process');
                 $processDefinition->setArguments(array(
                     new Reference($workflowContextServiceId),
                     new Reference($bpmn2WorkflowRepositoryServiceId),
